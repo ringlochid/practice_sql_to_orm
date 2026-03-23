@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from models_top_three import Base as TopThreeBase
+from models_recommend_page2 import Base as RecommendPage2Base
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
@@ -32,7 +32,8 @@ SessionLocal = sessionmaker(
 
 def create_tables() -> None:
     # MedianEmployeeBase.metadata.create_all(bind=engine)
-    TopThreeBase.metadata.create_all(bind=engine)
+    RecommendPage2Base.metadata.create_all(bind=engine)
+    # TopThreeBase.metadata.create_all(bind=engine)
 
 
 @contextmanager
