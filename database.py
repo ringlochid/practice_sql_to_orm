@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from models import Base
+from models_median_employee import Base
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",

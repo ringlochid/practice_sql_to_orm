@@ -3,7 +3,7 @@ import argparse
 from sqlalchemy import func, select, text
 
 from database import create_tables, get_session
-from models import Employee
+from models_median_employee import Employee
 
 SEED_EMPLOYEES = [
     {"company": "A", "salary": 100},

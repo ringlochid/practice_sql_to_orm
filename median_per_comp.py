@@ -2,7 +2,7 @@ from sqlalchemy import Integer, cast, func, select
 from sqlalchemy.orm import Session
 
 from database import create_tables, get_session
-from models import Employee
+from models_median_employee import Employee
 
 
 def get_median_salary_per_company(session: Session):
