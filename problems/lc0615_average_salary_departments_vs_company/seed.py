@@ -7,9 +7,20 @@ from database import get_session
 
 from .models import Employee, SCHEMA, Salary, create_tables
 
-# Scaffold only for now — fill these when you want local test data.
-SEED_EMPLOYEES: list[dict[str, int]] = []
-SEED_SALARIES: list[dict[str, int | date]] = []
+SEED_EMPLOYEES: list[dict[str, int]] = [
+    {"employee_id": 1, "department_id": 1},
+    {"employee_id": 2, "department_id": 2},
+    {"employee_id": 3, "department_id": 2},
+]
+
+SEED_SALARIES: list[dict[str, int | date]] = [
+    {"id": 1, "employee_id": 1, "amount": 9000, "pay_date": date(2017, 3, 31)},
+    {"id": 2, "employee_id": 2, "amount": 6000, "pay_date": date(2017, 3, 31)},
+    {"id": 3, "employee_id": 3, "amount": 10000, "pay_date": date(2017, 3, 31)},
+    {"id": 4, "employee_id": 1, "amount": 7000, "pay_date": date(2017, 2, 28)},
+    {"id": 5, "employee_id": 2, "amount": 6000, "pay_date": date(2017, 2, 28)},
+    {"id": 6, "employee_id": 3, "amount": 8000, "pay_date": date(2017, 2, 28)},
+]
 
 
 def seed_average_salary(*, append: bool = False) -> tuple[int, int]:
@@ -51,10 +62,10 @@ def main() -> None:
     args = parser.parse_args()
 
     total_employees, total_salaries = seed_average_salary(append=args.append)
+    mode = "appended" if args.append else "reset and seeded"
     print(
-        "Scaffold ready. "
-        f"Current totals employees={total_employees}, salaries={total_salaries}. "
-        "Fill SEED_EMPLOYEES and SEED_SALARIES when you want local test data."
+        "Seed complete: "
+        f"{mode}. Totals now employees={total_employees}, salaries={total_salaries}."
     )
 
 
