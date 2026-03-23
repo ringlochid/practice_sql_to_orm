@@ -5,8 +5,6 @@ from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from models_recommend_page2 import Base as RecommendPage2Base
-
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql+psycopg://postgres:postgres@localhost:5432/orm_practice",
@@ -30,12 +28,6 @@ SessionLocal = sessionmaker(
 )
 
 
-def create_tables() -> None:
-    # MedianEmployeeBase.metadata.create_all(bind=engine)
-    RecommendPage2Base.metadata.create_all(bind=engine)
-    # TopThreeBase.metadata.create_all(bind=engine)
-
-
 @contextmanager
 def get_session() -> Iterator[Session]:
     session = SessionLocal()
@@ -43,8 +35,3 @@ def get_session() -> Iterator[Session]:
         yield session
     finally:
         session.close()
-
-
-def get_db() -> Iterator[Session]:
-    with get_session() as session:
-        yield session

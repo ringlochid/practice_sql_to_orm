@@ -2,8 +2,9 @@ import argparse
 
 from sqlalchemy import func, select, text
 
-from database import create_tables, get_session
-from models_median_employee import Employee
+from database import get_session
+
+from .models import Employee, SCHEMA, create_tables
 
 SEED_EMPLOYEES = [
     {"company": "A", "salary": 100},
@@ -26,7 +27,9 @@ def seed_employees(*, append: bool = False) -> int:
 
     with get_session() as session:
         if not append:
-            session.execute(text("TRUNCATE TABLE employees RESTART IDENTITY"))
+            session.execute(
+                text(f'TRUNCATE TABLE "{SCHEMA}".employees RESTART IDENTITY')
+            )
 
         session.add_all(Employee(**row) for row in SEED_EMPLOYEES)
         session.commit()
@@ -37,7 +40,7 @@ def seed_employees(*, append: bool = False) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Seed test employee salary data.")
+    parser = argparse.ArgumentParser(description="Seed median employee salary data.")
     parser.add_argument(
         "--append",
         action="store_true",

@@ -2,8 +2,9 @@ import argparse
 
 from sqlalchemy import func, select, text
 
-from database import create_tables, get_session
-from models_recommend_page2 import Likes, Page, User, friend_relation
+from database import get_session
+
+from .models import Like, Page, SCHEMA, User, create_tables, friendships
 
 SEED_USERS = [
     {"id": 1, "name": "User 1"},
@@ -25,13 +26,13 @@ SEED_PAGES = [
 ]
 
 SEED_FRIENDSHIPS = [
-    {"user1_id": 1, "user2_id": 2},
-    {"user1_id": 1, "user2_id": 3},
-    {"user1_id": 1, "user2_id": 4},
-    {"user1_id": 2, "user2_id": 3},
-    {"user1_id": 2, "user2_id": 4},
-    {"user1_id": 2, "user2_id": 5},
-    {"user1_id": 6, "user2_id": 1},
+    {"user_id": 1, "friend_id": 2},
+    {"user_id": 1, "friend_id": 3},
+    {"user_id": 1, "friend_id": 4},
+    {"user_id": 2, "friend_id": 3},
+    {"user_id": 2, "friend_id": 4},
+    {"user_id": 2, "friend_id": 5},
+    {"user_id": 6, "friend_id": 1},
 ]
 
 SEED_LIKES = [
@@ -47,29 +48,29 @@ SEED_LIKES = [
 ]
 
 
-def seed_recommand_page2(*, append: bool = False) -> dict[str, int]:
+def seed_page_recommendations(*, append: bool = False) -> dict[str, int]:
     create_tables()
 
     with get_session() as session:
         if not append:
             session.execute(
                 text(
-                    "TRUNCATE TABLE likes, friend_relation, pages, users "
-                    "RESTART IDENTITY CASCADE"
+                    f'TRUNCATE TABLE "{SCHEMA}".likes, "{SCHEMA}".friendships, '
+                    f'"{SCHEMA}".pages, "{SCHEMA}".users RESTART IDENTITY CASCADE'
                 )
             )
 
         existing_user_ids = set(session.scalars(select(User.id)).all())
         existing_page_ids = set(session.scalars(select(Page.id)).all())
         existing_friendships = {
-            (row.user1_id, row.user2_id)
+            (row.user_id, row.friend_id)
             for row in session.execute(
-                select(friend_relation.c.user1_id, friend_relation.c.user2_id)
+                select(friendships.c.user_id, friendships.c.friend_id)
             ).all()
         }
         existing_likes = {
             (row.user_id, row.page_id)
-            for row in session.execute(select(Likes.user_id, Likes.page_id)).all()
+            for row in session.execute(select(Like.user_id, Like.page_id)).all()
         }
 
         users_to_add = [
@@ -81,10 +82,10 @@ def seed_recommand_page2(*, append: bool = False) -> dict[str, int]:
         friendships_to_add = [
             row
             for row in SEED_FRIENDSHIPS
-            if (row["user1_id"], row["user2_id"]) not in existing_friendships
+            if (row["user_id"], row["friend_id"]) not in existing_friendships
         ]
         likes_to_add = [
-            Likes(**row)
+            Like(**row)
             for row in SEED_LIKES
             if (row["user_id"], row["page_id"]) not in existing_likes
         ]
@@ -97,7 +98,7 @@ def seed_recommand_page2(*, append: bool = False) -> dict[str, int]:
             session.flush()
 
         if friendships_to_add:
-            session.execute(friend_relation.insert(), friendships_to_add)
+            session.execute(friendships.insert(), friendships_to_add)
         if likes_to_add:
             session.add_all(likes_to_add)
 
@@ -106,18 +107,16 @@ def seed_recommand_page2(*, append: bool = False) -> dict[str, int]:
         totals = {
             "users": session.scalar(select(func.count()).select_from(User)) or 0,
             "pages": session.scalar(select(func.count()).select_from(Page)) or 0,
-            "friendships": session.scalar(
-                select(func.count()).select_from(friend_relation)
-            )
+            "friendships": session.scalar(select(func.count()).select_from(friendships))
             or 0,
-            "likes": session.scalar(select(func.count()).select_from(Likes)) or 0,
+            "likes": session.scalar(select(func.count()).select_from(Like)) or 0,
         }
 
     return totals
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Seed Recommend Page II example data.")
+    parser = argparse.ArgumentParser(description="Seed Page Recommendations II data.")
     parser.add_argument(
         "--append",
         action="store_true",
@@ -125,7 +124,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    totals = seed_recommand_page2(append=args.append)
+    totals = seed_page_recommendations(append=args.append)
     mode = "appended missing rows" if args.append else "reset and seeded"
     print(
         "Seed complete: "

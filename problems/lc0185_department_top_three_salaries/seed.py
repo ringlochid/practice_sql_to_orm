@@ -2,8 +2,9 @@ import argparse
 
 from sqlalchemy import func, select, text
 
-from database import create_tables, get_session
-from models_top_three import Department, Employee
+from database import get_session
+
+from .models import Department, Employee, SCHEMA, create_tables
 
 SEED_DEPARTMENTS = [
     {"name": "IT"},
@@ -18,23 +19,22 @@ SEED_EMPLOYEES = [
     {"name": "Janet", "salary": 69000, "department": "IT"},
     {"name": "Randy", "salary": 85000, "department": "IT"},
     {"name": "Will", "salary": 70000, "department": "IT"},
-    {"name": "Jane", "salary": 60000, "department": "IT"},
-    {"name": "Zhang", "salary": 50000, "department": "IT"},
-    {"name": "Leo", "salary": 40000, "department": "IT"},
-    {"name": "Lochid", "salary": 140000, "department": "IT"},
 ]
 
 
-def seed_top_three(*, append: bool = False) -> tuple[int, int]:
+def seed_department_top_three(*, append: bool = False) -> tuple[int, int]:
     create_tables()
 
     with get_session() as session:
         if not append:
             session.execute(
-                text('TRUNCATE TABLE "Employee", "Department" RESTART IDENTITY CASCADE')
+                text(
+                    f'TRUNCATE TABLE "{SCHEMA}".employees, "{SCHEMA}".departments '
+                    "RESTART IDENTITY CASCADE"
+                )
             )
 
-        departments_by_name: dict[str, Department] = {
+        departments_by_name = {
             department.name: department
             for department in session.scalars(select(Department)).all()
         }
@@ -50,7 +50,7 @@ def seed_top_three(*, append: bool = False) -> tuple[int, int]:
             Employee(
                 name=row["name"],
                 salary=row["salary"],
-                departmentId=departments_by_name[row["department"]].id,
+                department_id=departments_by_name[row["department"]].id,
             )
             for row in SEED_EMPLOYEES
         )
@@ -73,7 +73,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    total_departments, total_employees = seed_top_three(append=args.append)
+    total_departments, total_employees = seed_department_top_three(append=args.append)
     mode = "appended" if args.append else "reset and seeded"
     print(
         "Seed complete: "

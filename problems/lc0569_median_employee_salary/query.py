@@ -1,12 +1,13 @@
 from sqlalchemy import Integer, cast, func, select
 from sqlalchemy.orm import Session
 
-from database import create_tables, get_session
-from models_median_employee import Employee
+from database import get_session
+
+from .models import Employee, create_tables
 
 
 def get_median_salary_per_company(session: Session):
-    ranked_by_company = select(
+    ranked_employees = select(
         Employee.id.label("id"),
         Employee.company.label("company"),
         Employee.salary.label("salary"),
@@ -30,20 +31,17 @@ def get_median_salary_per_company(session: Session):
 
     stmt = (
         select(
-            ranked_by_company.c.id,
-            ranked_by_company.c.company,
-            ranked_by_company.c.salary,
+            ranked_employees.c.id,
+            ranked_employees.c.company,
+            ranked_employees.c.salary,
         )
-        .join(
-            company_stats,
-            company_stats.c.company == ranked_by_company.c.company,
-        )
-        .where(ranked_by_company.c.salary_rownum >= company_stats.c.lower_row)
-        .where(ranked_by_company.c.salary_rownum <= company_stats.c.upper_row)
+        .join(company_stats, company_stats.c.company == ranked_employees.c.company)
+        .where(ranked_employees.c.salary_rownum >= company_stats.c.lower_row)
+        .where(ranked_employees.c.salary_rownum <= company_stats.c.upper_row)
         .order_by(
-            ranked_by_company.c.company,
-            ranked_by_company.c.salary,
-            ranked_by_company.c.id,
+            ranked_employees.c.company,
+            ranked_employees.c.salary,
+            ranked_employees.c.id,
         )
     )
 
@@ -57,7 +55,7 @@ def main() -> None:
         rows = get_median_salary_per_company(session)
 
     if not rows:
-        print("No rows found. Run seed.py first.")
+        print("No rows found. Run `python -m problems.lc0569_median_employee_salary.seed` first.")
         return
 
     for row in rows:
