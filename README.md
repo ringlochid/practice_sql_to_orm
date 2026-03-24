@@ -23,6 +23,7 @@ problems/
   lc0185_department_top_three_salaries/
   lc0615_average_salary_departments_vs_company/
   lc1892_page_recommendations_ii/
+  lc3156_employee_task_duration_and_concurrent_tasks/
 ```
 
 Each package contains:
@@ -132,6 +133,16 @@ Note: LC 615 is currently a **scaffold only**. The folder exists, but the ORM so
 docker compose exec -T postgres psql -U postgres -d orm_practice < problems/lc1892_page_recommendations_ii/query.sql
 ```
 
+### LC 3156 — Employee Task Duration and Concurrent Tasks
+
+```bash
+./.venv/bin/python -m problems.lc3156_employee_task_duration_and_concurrent_tasks.seed
+./.venv/bin/python -m problems.lc3156_employee_task_duration_and_concurrent_tasks.query
+docker compose exec -T postgres psql -U postgres -d orm_practice < problems/lc3156_employee_task_duration_and_concurrent_tasks/query.sql
+```
+
+Note: LC 3156 is currently scaffolded with sample seed data, but the ORM and raw SQL solution files are left as TODO placeholders.
+
 ---
 
 ## The workflow for a new problem
@@ -214,15 +225,29 @@ When translating SQL to SQLAlchemy ORM, this is the pattern to think in.
 - `SELECT ...` → `select(...)`
 - `WHERE ...` → `.where(...)`
 - `JOIN ...` → `.join(...)` or `.join_from(...)`
+- `LEFT JOIN ...` → `.outerjoin(...)`
 - `GROUP BY ...` → `.group_by(...)`
 - `HAVING ...` → `.having(...)`
 - `ORDER BY ...` → `.order_by(...)`
+- `DISTINCT` → `.distinct()`
 - `COUNT / SUM / AVG / MIN / MAX` → `func.count`, `func.sum`, `func.avg`, ...
+- `COUNT(DISTINCT x)` → `func.count(distinct(x))`
 - `AS alias` → `.label("alias")`
+- `UNION` → `union(...)`
 - `UNION ALL` → `union_all(...)`
+- `INTERSECT` → `intersect(...)`
+- `EXCEPT` → `except_(...)`
+- `CASE WHEN ... THEN ... ELSE ... END` → `case((cond, value), ..., else_=...)`
+- `CAST(x AS type)` → `cast(x, SomeType)`
+- `COALESCE(...)` → `func.coalesce(...)`
+- `IN (...)` → `.in_(...)`
+- `BETWEEN a AND b` → `.between(a, b)`
+- `LIKE / ILIKE` → `.like(...)`, `.ilike(...)`
+- `EXISTS (...)` → `select(...).where(...).exists()`
+- `NOT EXISTS (...)` → `~select(...).where(...).exists()`
 - `CTE` → `.cte("name")`
 - subquery → `.subquery()`
-- window function → `func.row_number().over(...)`, `func.dense_rank().over(...)`
+- window function → `func.row_number().over(...)`, `func.dense_rank().over(...)`, `func.lead(...).over(...)`, `func.lag(...).over(...)`
 - descending sort → `desc(column)`
 - tuple comparisons → `tuple_(...)`
 
@@ -290,6 +315,125 @@ ORM shape:
 ```
 
 If `NOT IN` starts behaving weirdly with `NULL`s, rewrite it as `NOT EXISTS` or use an anti-join.
+
+#### E. Set operations
+
+SQL shape:
+
+```sql
+SELECT ... FROM a
+UNION ALL
+SELECT ... FROM b
+```
+
+ORM shape:
+
+```python
+combined = union_all(select(...), select(...)).cte("combined")
+stmt = select(combined.c.some_col)
+```
+
+Same idea for:
+
+- `union(...)`
+- `intersect(...)`
+- `except_(...)`
+
+A very SQLAlchemy-ish move is to wrap the set operation in a `cte(...)` or `subquery()` before doing more filtering, grouping, or ordering.
+
+#### F. Anti-join / NOT EXISTS
+
+SQL shape:
+
+```sql
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM other
+    WHERE other.x = main.x
+)
+```
+
+ORM shape:
+
+```python
+subq = select(1).where(other.c.x == main.c.x)
+stmt = select(main.c.x).where(~subq.exists())
+```
+
+This is often cleaner and safer than `NOT IN`, especially if `NULL`s are involved.
+
+#### G. Self-join with aliases
+
+SQL shape:
+
+```sql
+FROM employees e1
+JOIN employees e2 ON e1.manager_id = e2.id
+```
+
+ORM shape:
+
+```python
+from sqlalchemy.orm import aliased
+
+e1 = aliased(Employee)
+e2 = aliased(Employee)
+
+stmt = select(e1.name, e2.name).join(e2, e1.manager_id == e2.id)
+```
+
+Use `aliased(...)` whenever the same model appears more than once in a query.
+
+#### H. Conditional aggregate
+
+SQL shape:
+
+```sql
+SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)
+```
+
+ORM shape:
+
+```python
+func.sum(case((table.c.status == "done", 1), else_=0))
+```
+
+This shows up all the time in report-style problems.
+
+#### I. Window first, collapse later
+
+SQL shape:
+
+```sql
+WITH ranked AS (... window function ...)
+SELECT ...
+FROM ranked
+WHERE ...
+```
+
+ORM shape:
+
+```python
+ranked = select(..., func.row_number().over(...).label("rn")).cte("ranked")
+stmt = select(ranked.c.some_col).where(ranked.c.rn == 1)
+```
+
+This is one of the most useful SQLAlchemy habits: compute the window columns in one step, then do filtering/grouping in an outer step.
+
+### More SQLAlchemy-ish habits
+
+These are not direct SQL translations, but they tend to make ORM query code much cleaner.
+
+- **Name your intermediate steps**: `base`, `ranked`, `monthly`, `deduped`, `final`
+- **Use `.cte(...)` when the SQL naturally has `WITH` blocks**
+- **Use `.subquery()` for inline derived tables; use `.cte()` when readability matters more**
+- **Prefer explicit `.join_from(left, right, onclause)` when the join path is not obvious**
+- **Label computed columns early** with `.label(...)` so outer queries are easier to read
+- **After window functions, return to an outer `select(...)`** instead of cramming everything into one statement
+- **After `union_all(...)` / `intersect(...)` / `except_(...)`, wrap the result** before applying final filters or ordering
+- **Use `.c.column_name` consistently** when selecting from a CTE or subquery
+- **Keep the ORM query shaped like the SQL logic**, not like a random chain of method calls
+- **Debug by matching stages**: seed output → raw SQL output → ORM output
 
 ---
 
