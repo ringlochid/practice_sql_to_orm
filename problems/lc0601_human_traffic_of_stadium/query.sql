@@ -1,39 +1,47 @@
 WITH valid_number AS (
     SELECT
-        *
+        id,
+        visit_date,
+        people
     FROM
         Stadium
     WHERE
         people >= 100
 ),
-cons_rows AS(
+grouped_rows AS (
     SELECT
-        s3.id AS id1,
-        s2.id AS id2,
-        s1.id AS id3
+        id,
+        visit_date,
+        people,
+        id - ROW_NUMBER() OVER (
+            ORDER BY
+                id
+        ) AS group_id
     FROM
-        valid_number s1
-        JOIN valid_number s2 ON s1.id - 1 = s2.id
-        JOIN valid_number s3 ON s2.id - 1 = s3.id
+        valid_number
+),
+valid_group AS (
+    SELECT
+        group_id
+    FROM
+        grouped_rows
+    GROUP BY
+        group_id
+    HAVING
+        COUNT(*) >= 3
 )
 SELECT
-    *
+    id,
+    visit_date,
+    people
 FROM
-    Stadium
+    grouped_rows
 WHERE
-    id IN (
+    group_id IN (
         SELECT
-            id1
+            group_id
         FROM
-            cons_rows
-        UNION
-        SELECT
-            id2
-        FROM
-            cons_rows
-        UNION
-        SELECT
-            id3
-        FROM
-            cons_rows
+            valid_group
     )
+ORDER BY
+    visit_date
