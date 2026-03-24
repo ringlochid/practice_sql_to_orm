@@ -30,7 +30,9 @@ def get_page_recommendations(session: Session):
         )
         .select_from(all_friendships)
         .join(Like, all_friendships.c.friend_id == Like.user_id)
-        .where(~tuple_(all_friendships.c.user_id, Like.page_id).in_(liked_pages.select()))
+        .where(
+            ~tuple_(all_friendships.c.user_id, Like.page_id).in_(liked_pages.select())
+        )
         .group_by(all_friendships.c.user_id, Like.page_id)
         .order_by(all_friendships.c.user_id, Like.page_id)
     )
