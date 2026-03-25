@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Integer, String, text
+from sqlalchemy import ForeignKey, Index, Integer, String, desc, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from database import engine
@@ -15,7 +15,7 @@ class Department(Base):
     __table_args__ = {"schema": SCHEMA}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String, nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False, index=True)
 
     employees: Mapped[list["Employee"]] = relationship(
         "Employee",
@@ -26,7 +26,15 @@ class Department(Base):
 
 class Employee(Base):
     __tablename__ = "employees"
-    __table_args__ = {"schema": SCHEMA}
+    __table_args__ = (
+        Index(
+            "ix_employees_department_salary_desc_name",
+            "department_id",
+            desc("salary"),
+            "name",
+        ),
+        {"schema": SCHEMA},
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)

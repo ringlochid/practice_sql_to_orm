@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Table, text
+from sqlalchemy import Column, ForeignKey, Index, Integer, String, Table, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from database import engine
@@ -44,7 +44,10 @@ class Page(Base):
 
 class Like(Base):
     __tablename__ = "likes"
-    __table_args__ = {"schema": SCHEMA}
+    __table_args__ = (
+        Index("ix_user_id_page_id", "user_id", "page_id"),
+        {"schema": SCHEMA},
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(

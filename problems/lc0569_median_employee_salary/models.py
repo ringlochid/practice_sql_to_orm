@@ -1,4 +1,4 @@
-from sqlalchemy import CheckConstraint, Integer, String, text
+from sqlalchemy import CheckConstraint, Index, Integer, String, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from database import engine
@@ -13,6 +13,7 @@ class Base(DeclarativeBase):
 class Employee(Base):
     __tablename__ = "employees"
     __table_args__ = (
+        Index("ix_company_salary_id", "company", "salary", "id"),
         CheckConstraint("salary > 0", name="check_salary_positive"),
         {"schema": SCHEMA},
     )

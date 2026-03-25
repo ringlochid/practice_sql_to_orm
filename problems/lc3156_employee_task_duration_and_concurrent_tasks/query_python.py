@@ -63,7 +63,7 @@ def sweepline_algo(session: Session):
 
         acc += mx_end - mn_start
 
-        total_hours = acc.total_seconds() / 3600
+        total_hours = acc.total_seconds() // 3600
         results.append(
             {
                 "employee_id": eid,
@@ -71,7 +71,7 @@ def sweepline_algo(session: Session):
                 "max_concurrent_tasks": mx_concurrency,
             }
         )
-    return [Result.model_validate(row) for row in results]
+    return [Result.model_validate(row).model_dump() for row in results]
 
 
 def main() -> None:
