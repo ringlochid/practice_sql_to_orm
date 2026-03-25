@@ -9,11 +9,26 @@ from .models import SCHEMA, Spending, create_tables
 
 SEED_SPENDING: list[dict[str, int | str | date]] = [
     {"user_id": 1, "spend_date": date(2019, 7, 1), "platform": "mobile", "amount": 100},
-    {"user_id": 1, "spend_date": date(2019, 7, 1), "platform": "desktop", "amount": 100},
+    {
+        "user_id": 1,
+        "spend_date": date(2019, 7, 1),
+        "platform": "desktop",
+        "amount": 100,
+    },
     {"user_id": 2, "spend_date": date(2019, 7, 1), "platform": "mobile", "amount": 100},
     {"user_id": 2, "spend_date": date(2019, 7, 2), "platform": "mobile", "amount": 100},
-    {"user_id": 3, "spend_date": date(2019, 7, 1), "platform": "desktop", "amount": 100},
-    {"user_id": 3, "spend_date": date(2019, 7, 2), "platform": "desktop", "amount": 100},
+    {
+        "user_id": 3,
+        "spend_date": date(2019, 7, 1),
+        "platform": "desktop",
+        "amount": 100,
+    },
+    {
+        "user_id": 3,
+        "spend_date": date(2019, 7, 2),
+        "platform": "desktop",
+        "amount": 100,
+    },
 ]
 
 
